@@ -1,0 +1,27 @@
+services:
+  redis:
+    image: docker.io/redis:8-trixie
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  web:
+    # Build locally from source (default). To run a published image instead,
+    # comment out `build:` and use e.g.:
+    #   image: ghcr.io/gonzalo-radio/resque-web:0.1.0
+    build:
+      context: .
+      dockerfile: Containerfile
+    ports:
+      - "8888:8888"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    # The config defaults to the `redis` service. Point it at another redis
+    # without rebuilding via env (read by /etc/resque-web.conf):
+    # environment:
+    #   RESQUE_REDIS: some-other-host:6379
+    #   RESQUE_NAMESPACE: resque
+
+volumes:
+  redis-data:

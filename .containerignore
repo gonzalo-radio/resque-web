@@ -1,0 +1,8 @@
+.git
+**/.git
+client/node_modules
+client/dist
+lib/Resque/Web/public
+t
+node_modules
+*.log
