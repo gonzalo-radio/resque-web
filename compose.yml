@@ -6,6 +6,9 @@ services:
     restart: unless-stopped
 
   web:
+    # Build locally from source (default). To run a published image instead,
+    # comment out `build:` and use e.g.:
+    #   image: ghcr.io/gonzalo-radio/resque-web:0.1.0
     build:
       context: .
       dockerfile: Containerfile
@@ -14,10 +17,11 @@ services:
     depends_on:
       - redis
     restart: unless-stopped
-    # The redis host is baked into the image at /etc/resque-web.conf.
-    # To override it without rebuilding, uncomment the mount below:
-    # volumes:
-    #   - ./container/resque-web.conf:/etc/resque-web.conf:ro,Z
+    # The config defaults to the `redis` service. Point it at another redis
+    # without rebuilding via env (read by /etc/resque-web.conf):
+    # environment:
+    #   RESQUE_REDIS: some-other-host:6379
+    #   RESQUE_NAMESPACE: resque
 
 volumes:
   redis-data:
