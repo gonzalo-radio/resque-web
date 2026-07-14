@@ -1,0 +1,23 @@
+services:
+  redis:
+    image: docker.io/redis:8-trixie
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Containerfile
+    ports:
+      - "8888:8888"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    # The redis host is baked into the image at /etc/resque-web.conf.
+    # To override it without rebuilding, uncomment the mount below:
+    # volumes:
+    #   - ./container/resque-web.conf:/etc/resque-web.conf:ro,Z
+
+volumes:
+  redis-data:
