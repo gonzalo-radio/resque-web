@@ -17,6 +17,21 @@ podman-compose down              # stop (add -v to also drop the redis volume)
 
 The UI is then available at <http://localhost:8888>.
 
+### Frontend development with hot-reload
+
+The `web` service serves the frontend that was compiled into the image at build
+time, so source edits under `client/src/` don't show up without rebuilding. For
+fast iteration there is a `dev` service (behind the `dev` profile) that runs the
+Vue dev server with hot-reload and proxies the API to `web`:
+
+```sh
+podman-compose --profile dev up   # brings up redis + web + dev
+```
+
+The dev UI is then available at <http://localhost:8080> and reloads instantly on
+source changes. API requests are proxied to the `web` (Mojolicious) service, so
+it keeps talking to the real backend and Redis.
+
 ## Build & publish a production image
 
 A dedicated makefile drives the image build/publish with Podman. It is separate
