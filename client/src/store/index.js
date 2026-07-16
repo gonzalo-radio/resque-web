@@ -10,6 +10,7 @@ const state = {
   redisStats: {},
   lastError: null,
   periodic: {},
+  refreshPaused: localStorage.getItem('refreshPaused') === 'true',
 };
 
 const mutations = {
@@ -30,30 +31,63 @@ const mutations = {
     if ( state.periodic[key] ) { state.periodic[key]--   }
     else                       { state.periodic[key] = 0 }
   },
+  setRefreshPaused(state, paused) {
+    state.refreshPaused = paused;
+    localStorage.setItem('refreshPaused', paused);
+  },
 };
 
+const REFRESH_INTERVAL = 1500;
+
 const tasks = { waiting: {} };
+
+function clearTimer(action) {
+  if ( tasks[action] ) {
+    clearInterval(tasks[action]);
+    delete tasks[action];
+  }
+}
+
+function makeTimer(action, dispatch) {
+  return setInterval( async () => {
+    if ( tasks.waiting[action] ) return;
+    tasks.waiting[action] = true;
+    await dispatch(action);
+    tasks.waiting[action] = false;
+  }, REFRESH_INTERVAL );
+}
+
+function rebuildTimers(state, dispatch) {
+  Object.keys(state.periodic).forEach( action => {
+    if ( state.periodic[action] > 0 ) {
+      clearTimer(action);
+      if ( !state.refreshPaused ) {
+        dispatch(action);
+        tasks[action] = makeTimer(action, dispatch);
+      }
+    }
+  });
+}
 
 const actions = {
   startPeriodic({ state, commit, dispatch }, action){
     commit('incPeriodic', action);
     if ( state.periodic[action] === 1 ) {
       dispatch(action);
-      const taskId = setInterval( async () => {
-        if ( tasks.waiting[action] ) return;
-        tasks.waiting[action] = true;
-        await dispatch(action);
-        tasks.waiting[action] = false;
-      }, 1500 );
-      tasks[action] = taskId;
+      if ( !state.refreshPaused ) {
+        tasks[action] = makeTimer(action, dispatch);
+      }
     }
   },
   stopPeriodic({ state, commit }, action){
     commit('decPeriodic', action);
-    if ( state.periodic[action] === 0 && tasks[action] ) {
-      clearInterval(tasks[action]);
-      delete tasks[action];
+    if ( state.periodic[action] === 0 ) {
+      clearTimer(action);
     }
+  },
+  setRefreshPaused({ state, commit, dispatch }, paused){
+    commit('setRefreshPaused', paused);
+    rebuildTimers(state, dispatch);
   },
   async fetchQueues({ commit }){
     try {

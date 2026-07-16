@@ -23,5 +23,38 @@ services:
     #   RESQUE_REDIS: some-other-host:6379
     #   RESQUE_NAMESPACE: resque
 
+  # Frontend dev server with hot-reload. Opt-in via the `dev` profile so it
+  # never starts in a normal `up`. It reuses the `frontend` build stage from the
+  # Containerfile (Node + deps already installed) and runs the Vue dev server,
+  # bind-mounting ./client so source edits reload instantly. API requests are
+  # proxied to the `web` (Mojolicious) service.
+  #
+  # Usage: podman-compose --profile dev up   ->  open http://localhost:8080
+  dev:
+    profiles: ["dev"]
+    build:
+      context: .
+      dockerfile: Containerfile
+      target: frontend
+    command: yarn serve
+    working_dir: /app/client
+    environment:
+      API_PROXY: http://web:8888
+      # inotify events don't reliably cross Podman bind mounts, so poll for
+      # file changes: WATCHPACK_POLLING drives webpack 5 (source recompile),
+      # CHOKIDAR_USEPOLLING covers the dev server's own watchers.
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      # Live source for hot-reload...
+      - ./client:/app/client
+      # ...but keep the image's node_modules (built for the container).
+      - /app/client/node_modules
+    depends_on:
+      - web
+    restart: unless-stopped
+
 volumes:
   redis-data:
