@@ -10,7 +10,6 @@ const state = {
   redisStats: {},
   lastError: null,
   periodic: {},
-  refreshInterval: Number(localStorage.getItem('refreshInterval') ?? 2000),
   refreshPaused: localStorage.getItem('refreshPaused') === 'true',
 };
 
@@ -32,15 +31,13 @@ const mutations = {
     if ( state.periodic[key] ) { state.periodic[key]--   }
     else                       { state.periodic[key] = 0 }
   },
-  setRefreshInterval(state, ms) {
-    state.refreshInterval = ms;
-    localStorage.setItem('refreshInterval', ms);
-  },
   setRefreshPaused(state, paused) {
     state.refreshPaused = paused;
     localStorage.setItem('refreshPaused', paused);
   },
 };
+
+const REFRESH_INTERVAL = 1500;
 
 const tasks = { waiting: {} };
 
@@ -51,13 +48,13 @@ function clearTimer(action) {
   }
 }
 
-function makeTimer(action, dispatch, interval) {
+function makeTimer(action, dispatch) {
   return setInterval( async () => {
     if ( tasks.waiting[action] ) return;
     tasks.waiting[action] = true;
     await dispatch(action);
     tasks.waiting[action] = false;
-  }, interval );
+  }, REFRESH_INTERVAL );
 }
 
 function rebuildTimers(state, dispatch) {
@@ -66,7 +63,7 @@ function rebuildTimers(state, dispatch) {
       clearTimer(action);
       if ( !state.refreshPaused ) {
         dispatch(action);
-        tasks[action] = makeTimer(action, dispatch, state.refreshInterval);
+        tasks[action] = makeTimer(action, dispatch);
       }
     }
   });
@@ -78,7 +75,7 @@ const actions = {
     if ( state.periodic[action] === 1 ) {
       dispatch(action);
       if ( !state.refreshPaused ) {
-        tasks[action] = makeTimer(action, dispatch, state.refreshInterval);
+        tasks[action] = makeTimer(action, dispatch);
       }
     }
   },
@@ -87,10 +84,6 @@ const actions = {
     if ( state.periodic[action] === 0 ) {
       clearTimer(action);
     }
-  },
-  setRefreshInterval({ state, commit, dispatch }, ms){
-    commit('setRefreshInterval', ms);
-    rebuildTimers(state, dispatch);
   },
   setRefreshPaused({ state, commit, dispatch }, paused){
     commit('setRefreshPaused', paused);

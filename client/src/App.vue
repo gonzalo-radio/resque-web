@@ -10,16 +10,20 @@
       <button
         type="button"
         class="refresh-toggle"
+        :class="{ paused: refreshPaused }"
         :title="refreshPaused ? 'Reanudar auto-refresh' : 'Pausar auto-refresh'"
+        :aria-label="refreshPaused ? 'Reanudar auto-refresh' : 'Pausar auto-refresh'"
         @click="toggleRefresh"
-      >{{ refreshPaused ? '▶' : '⏸' }}</button>
-      <select v-model.number="refreshInterval" :disabled="refreshPaused" aria-label="Frecuencia de refresco">
-        <option :value="1000">1s</option>
-        <option :value="2000">2s</option>
-        <option :value="5000">5s</option>
-        <option :value="10000">10s</option>
-        <option :value="30000">30s</option>
-      </select>
+      >
+        <span class="spinner" aria-hidden="true"></span>
+        <svg class="icon-pause" viewBox="0 0 16 16" aria-hidden="true">
+          <rect x="3" y="2" width="4" height="12" rx="1" />
+          <rect x="9" y="2" width="4" height="12" rx="1" />
+        </svg>
+        <svg class="icon-play" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M4 2.5v11a1 1 0 0 0 1.5.87l9-5.5a1 1 0 0 0 0-1.74l-9-5.5A1 1 0 0 0 4 2.5z" />
+        </svg>
+      </button>
     </span>
   </div>
   <router-view/>
@@ -28,10 +32,6 @@
 <script>
 export default {
   computed: {
-    refreshInterval: {
-      get() { return this.$store.state.refreshInterval; },
-      set(ms) { this.$store.dispatch('setRefreshInterval', Number(ms)); }
-    },
     refreshPaused() { return this.$store.state.refreshPaused; }
   },
   methods: {
@@ -83,42 +83,64 @@ a {
 
   #refresh-control {
     display: inline-flex;
-    align-items: stretch;
-    gap: 8px;
+    align-items: center;
     margin-left: 20px;
     vertical-align: middle;
 
-    .refresh-toggle,
-    select {
+    .refresh-toggle {
       box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
       height: 30px;
+      padding: 0;
       border: 1px solid #ccc;
       border-radius: 3px;
-      padding: 0 10px;
-      font-size: 13px;
-      color: #2c3e50;
       background: #fff;
-    }
-
-    .refresh-toggle {
+      color: #2c3e50;
       cursor: pointer;
-      line-height: 1;
 
       &:hover {
         color: #42b983;
         border-color: #42b983;
       }
-    }
 
-    select {
-      padding: 0 6px;
+      // Spinner: shown while auto-refresh is running.
+      .spinner {
+        width: 14px;
+        height: 14px;
+        border: 2px solid #ddd;
+        border-top-color: #42b983;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
 
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+      .icon-pause,
+      .icon-play {
+        display: none;
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+      }
+
+      // Running + hover: reveal the pause affordance.
+      &:not(.paused):hover {
+        .spinner { display: none; }
+        .icon-pause { display: block; }
+      }
+
+      // Paused: show the play icon.
+      &.paused {
+        .spinner { display: none; }
+        .icon-play { display: block; }
       }
     }
   }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 div.widget {
