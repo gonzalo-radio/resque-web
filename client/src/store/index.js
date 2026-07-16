@@ -10,6 +10,8 @@ const state = {
   redisStats: {},
   lastError: null,
   periodic: {},
+  refreshInterval: Number(localStorage.getItem('refreshInterval') ?? 2000),
+  refreshPaused: localStorage.getItem('refreshPaused') === 'true',
 };
 
 const mutations = {
@@ -30,30 +32,69 @@ const mutations = {
     if ( state.periodic[key] ) { state.periodic[key]--   }
     else                       { state.periodic[key] = 0 }
   },
+  setRefreshInterval(state, ms) {
+    state.refreshInterval = ms;
+    localStorage.setItem('refreshInterval', ms);
+  },
+  setRefreshPaused(state, paused) {
+    state.refreshPaused = paused;
+    localStorage.setItem('refreshPaused', paused);
+  },
 };
 
 const tasks = { waiting: {} };
+
+function clearTimer(action) {
+  if ( tasks[action] ) {
+    clearInterval(tasks[action]);
+    delete tasks[action];
+  }
+}
+
+function makeTimer(action, dispatch, interval) {
+  return setInterval( async () => {
+    if ( tasks.waiting[action] ) return;
+    tasks.waiting[action] = true;
+    await dispatch(action);
+    tasks.waiting[action] = false;
+  }, interval );
+}
+
+function rebuildTimers(state, dispatch) {
+  Object.keys(state.periodic).forEach( action => {
+    if ( state.periodic[action] > 0 ) {
+      clearTimer(action);
+      if ( !state.refreshPaused ) {
+        dispatch(action);
+        tasks[action] = makeTimer(action, dispatch, state.refreshInterval);
+      }
+    }
+  });
+}
 
 const actions = {
   startPeriodic({ state, commit, dispatch }, action){
     commit('incPeriodic', action);
     if ( state.periodic[action] === 1 ) {
       dispatch(action);
-      const taskId = setInterval( async () => {
-        if ( tasks.waiting[action] ) return;
-        tasks.waiting[action] = true;
-        await dispatch(action);
-        tasks.waiting[action] = false;
-      }, 1500 );
-      tasks[action] = taskId;
+      if ( !state.refreshPaused ) {
+        tasks[action] = makeTimer(action, dispatch, state.refreshInterval);
+      }
     }
   },
   stopPeriodic({ state, commit }, action){
     commit('decPeriodic', action);
-    if ( state.periodic[action] === 0 && tasks[action] ) {
-      clearInterval(tasks[action]);
-      delete tasks[action];
+    if ( state.periodic[action] === 0 ) {
+      clearTimer(action);
     }
+  },
+  setRefreshInterval({ state, commit, dispatch }, ms){
+    commit('setRefreshInterval', ms);
+    rebuildTimers(state, dispatch);
+  },
+  setRefreshPaused({ state, commit, dispatch }, paused){
+    commit('setRefreshPaused', paused);
+    rebuildTimers(state, dispatch);
   },
   async fetchQueues({ commit }){
     try {

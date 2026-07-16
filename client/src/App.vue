@@ -6,9 +6,41 @@
     <router-link to="/queues">Queues</router-link>
     <router-link to="/workers">Workers</router-link>
     <router-link to="/stats">Stats</router-link>
+    <span id="refresh-control">
+      <button
+        type="button"
+        class="refresh-toggle"
+        :title="refreshPaused ? 'Reanudar auto-refresh' : 'Pausar auto-refresh'"
+        @click="toggleRefresh"
+      >{{ refreshPaused ? '▶' : '⏸' }}</button>
+      <select v-model.number="refreshInterval" :disabled="refreshPaused" aria-label="Frecuencia de refresco">
+        <option :value="1000">1s</option>
+        <option :value="2000">2s</option>
+        <option :value="5000">5s</option>
+        <option :value="10000">10s</option>
+        <option :value="30000">30s</option>
+      </select>
+    </span>
   </div>
   <router-view/>
 </template>
+
+<script>
+export default {
+  computed: {
+    refreshInterval: {
+      get() { return this.$store.state.refreshInterval; },
+      set(ms) { this.$store.dispatch('setRefreshInterval', Number(ms)); }
+    },
+    refreshPaused() { return this.$store.state.refreshPaused; }
+  },
+  methods: {
+    toggleRefresh() {
+      this.$store.dispatch('setRefreshPaused', !this.refreshPaused);
+    }
+  }
+};
+</script>
 
 <style lang="scss">
 body {
@@ -46,6 +78,45 @@ a {
 
     &.router-link-exact-active {
       color: #42b983;
+    }
+  }
+
+  #refresh-control {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 8px;
+    margin-left: 20px;
+    vertical-align: middle;
+
+    .refresh-toggle,
+    select {
+      box-sizing: border-box;
+      height: 30px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      padding: 0 10px;
+      font-size: 13px;
+      color: #2c3e50;
+      background: #fff;
+    }
+
+    .refresh-toggle {
+      cursor: pointer;
+      line-height: 1;
+
+      &:hover {
+        color: #42b983;
+        border-color: #42b983;
+      }
+    }
+
+    select {
+      padding: 0 6px;
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
     }
   }
 }
