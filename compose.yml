@@ -40,6 +40,11 @@ services:
     working_dir: /app/client
     environment:
       API_PROXY: http://web:8888
+      # inotify events don't reliably cross Podman bind mounts, so poll for
+      # file changes: WATCHPACK_POLLING drives webpack 5 (source recompile),
+      # CHOKIDAR_USEPOLLING covers the dev server's own watchers.
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
     ports:
       - "8080:8080"
     volumes:
