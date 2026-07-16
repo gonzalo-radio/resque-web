@@ -67,6 +67,7 @@ a {
 }
 
 #nav {
+  position: relative;
   text-align: center;
   padding: 30px 0;
   background-color:#fff;
@@ -84,8 +85,12 @@ a {
   #refresh-control {
     display: inline-flex;
     align-items: center;
-    margin-left: 20px;
-    vertical-align: middle;
+    // Pull out of the centered flow and pin the right edge to the section
+    // table's right edge (the table's right border sits at 10% of the viewport).
+    position: absolute;
+    right: 10%;
+    top: 50%;
+    transform: translateY(-50%);
 
     .refresh-toggle {
       box-sizing: border-box;
