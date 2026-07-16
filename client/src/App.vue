@@ -100,15 +100,13 @@ a {
       width: 30px;
       height: 30px;
       padding: 0;
-      border: 1px solid #ccc;
-      border-radius: 3px;
-      background: #fff;
+      border: none;
+      background: none;
       color: #2c3e50;
       cursor: pointer;
 
       &:hover {
         color: #42b983;
-        border-color: #42b983;
       }
 
       // Spinner: shown while auto-refresh is running.
