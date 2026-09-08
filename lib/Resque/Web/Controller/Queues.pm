@@ -3,7 +3,7 @@ use Mojo::Base 'Mojolicious::Controller', -signatures;
 
 sub list($c) {
     Mojo::Promise->all($c->queues_p, $c->fail_count_p)->then(sub($queues, $fail_count){
-        $c->render( json => {
+        $c->render_alive( json => {
             items  => $queues->[0]->to_array,
             failed => $fail_count->[0]
         });
@@ -28,7 +28,7 @@ sub show($c) {
         ];
         return $jobs, $c->resque->size($name);
     })->then(sub($jobs, $total) {
-        $c->render( json => {
+        $c->render_alive( json => {
             jobs  => $jobs,
             total => $total
         });
