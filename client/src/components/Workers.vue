@@ -24,7 +24,7 @@
           </td>
           <td>{{ worker.working.queue }}</td>
           <td>
-            <time-ago :date="worker.working.run_at" />
+            <time-ago :date="worker.working.since" />
           </td>
           <td>
             {{ worker.working.payload.class }}

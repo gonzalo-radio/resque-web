@@ -138,15 +138,16 @@ const getters = {
     return state.queues.filter( queue => queue.jobs > 0 ).sort( (a, b) => a.name > b.name )
   },
   working(state) {
-    return state.workers.filter(
-      worker => worker.working.state !== 'idle'
-    ).map(
-      worker => {
-        worker.working.run_at = worker.working.run_at + 'Z';
-        worker.working.since = new Date(worker.working.run_at);
-        return worker;
-      }
-    ).sort( (a, b) => a.working.since > b.working.since );
+    return state.workers
+      .filter( worker => worker.working.state !== 'idle' )
+      .map( worker => ({
+        ...worker,
+        working: {
+          ...worker.working,
+          since: worker.working.run_at ? new Date(`${worker.working.run_at}Z`) : null,
+        },
+      }) )
+      .sort( (a, b) => a.working.since - b.working.since );
   },
   hosts(state) {
     const hosts = {};
