@@ -13,7 +13,7 @@ sub basic($c) {
             redis     => $c->resque->redis->info,
         }
     })->then(sub($res){
-        $c->render( json => $res );
+        $c->render_alive( json => $res );
     });
 };
 
@@ -29,7 +29,7 @@ sub full($c) {
             }
         })
     )->then(sub($queues, $workers, $info){
-        $c->render( json => { $info->[0]->%*,
+        $c->render_alive( json => { $info->[0]->%*,
             pending => $queues->[0]->map(sub{$_->{'jobs'}})->reduce(sub{ $a + $b }),
             queues  => $queues->[0]->size,
             workers => $workers->[0]->size,

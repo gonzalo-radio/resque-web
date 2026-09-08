@@ -9,7 +9,7 @@ sub list($c) {
             $c->resque->failures->count
         );
     })->then(sub($items, $total) {
-        $c->render( json => {
+        $c->render_alive( json => {
             items => $items,
             total => $total
         });
@@ -20,7 +20,7 @@ sub empty($c) {
     Mojo::IOLoop->subprocess->run_p(sub {
         $c->resque->failures->clear;
     })->then(sub{
-        $c->render( json => {} );
+        $c->render_alive( json => {} );
     });
 };
 
@@ -29,7 +29,7 @@ sub mass_dequeue($c) {
     Mojo::IOLoop->subprocess->run_p(sub {
         $c->resque->failures->mass_remove(%$args)
     })->then(sub($total) {
-        $c->render( json => { total => $total });
+        $c->render_alive( json => { total => $total });
     });
 };
 
@@ -37,7 +37,7 @@ sub requeue_one($c) {
     Mojo::IOLoop->subprocess->run_p(sub {
         $c->resque->failures->requeue($c->stash('idx'));
     })->then(sub{
-        $c->render( json => {} );
+        $c->render_alive( json => {} );
     });
 };
 
@@ -45,7 +45,7 @@ sub remove_one($c) {
     Mojo::IOLoop->subprocess->run_p(sub {
         $c->resque->failures->remove($c->stash('idx'));
     })->then(sub{
-        $c->render( json => {} );
+        $c->render_alive( json => {} );
     });
 };
 

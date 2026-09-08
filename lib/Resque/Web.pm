@@ -139,6 +139,15 @@ sub setup_helpers($self) {
         $cache->{$key}{res};
     });
 
+    # Render only while the client is still connected. Our async actions
+    # resolve after a subprocess finishes, by which point the request may
+    # already have been aborted (the UI polls several endpoints every 1.5s
+    # and the browser cancels in-flight requests). Rendering into a
+    # destroyed transaction croaks with "Transaction already destroyed".
+    $self->helper( render_alive => sub($c, @args) {
+        $c->render(@args) if $c->tx;
+    });
+
     $self->helper( req_is_human => sub($c) {
         return 0 if $c->req->is_xhr;
         return 0 if $c->req->headers->user_agent =~ /curl/i;
