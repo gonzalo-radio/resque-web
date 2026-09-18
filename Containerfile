@@ -41,10 +41,14 @@ WORKDIR /app
 # whole remaining input on every non-ASCII character (is_valid_utf8). Decoding
 # multi-MB job payloads with accented text then takes minutes-to-hours of pure
 # memcpy at 100% CPU, wedging the workers sub-task children.
-# EV and Cpanel::JSON::XS are the Mojolicious-recommended optional backends this
-# app actually exercises: Mojo::JSON (subprocess result pipe + every json =>
-# response) picks up Cpanel::JSON::XS, and the daemon's event loop picks up EV.
-RUN cpanm --notest --no-man-pages Mojolicious Resque Redis JSON::XS EV Cpanel::JSON::XS \
+# Plus the full set of Mojolicious-recommended optional modules. The two that
+# matter most here: Mojo::JSON (subprocess result pipe + every json => response)
+# picks up Cpanel::JSON::XS, and the daemon's event loop picks up EV. The rest
+# (TLS, non-blocking DNS, SOCKS, roles, async/await) are cheap to carry and keep
+# the image aligned with upstream recommendations.
+RUN cpanm --notest --no-man-pages Mojolicious Resque Redis JSON::XS \
+        EV Cpanel::JSON::XS IO::Socket::SSL Net::DNS::Native IO::Socket::Socks \
+        Role::Tiny Future::AsyncAwait \
     && rm -rf /root/.cpanm
 
 # Backend source
