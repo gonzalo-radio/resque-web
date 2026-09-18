@@ -35,8 +35,13 @@ ENV MOJO_MODE=production
 
 WORKDIR /app
 
-# Perl deps (matches Makefile.PL: Mojolicious >= 9.17, Resque >= 0.42; Redis client)
-RUN cpanm --notest --no-man-pages Mojolicious Resque Redis \
+# Perl deps (matches Makefile.PL: Mojolicious >= 9.17, Resque >= 0.42; Redis client).
+# JSON::XS is essential, not optional: without it the JSON wrapper used by
+# Resque::Encoder falls back to pure-perl JSON::PP, whose utf8 decoder copies the
+# whole remaining input on every non-ASCII character (is_valid_utf8). Decoding
+# multi-MB job payloads with accented text then takes minutes-to-hours of pure
+# memcpy at 100% CPU, wedging the workers sub-task children.
+RUN cpanm --notest --no-man-pages Mojolicious Resque Redis JSON::XS \
     && rm -rf /root/.cpanm
 
 # Backend source
