@@ -35,17 +35,9 @@ ENV MOJO_MODE=production
 
 WORKDIR /app
 
-# Perl deps (matches Makefile.PL: Mojolicious >= 9.17, Resque >= 0.42; Redis client).
-# JSON::XS is essential, not optional: without it the JSON wrapper used by
-# Resque::Encoder falls back to pure-perl JSON::PP, whose utf8 decoder copies the
-# whole remaining input on every non-ASCII character (is_valid_utf8). Decoding
-# multi-MB job payloads with accented text then takes minutes-to-hours of pure
-# memcpy at 100% CPU, wedging the workers sub-task children.
-# Plus the full set of Mojolicious-recommended optional modules. The two that
-# matter most here: Mojo::JSON (subprocess result pipe + every json => response)
-# picks up Cpanel::JSON::XS, and the daemon's event loop picks up EV. The rest
-# (TLS, non-blocking DNS, SOCKS, roles, async/await) are cheap to carry and keep
-# the image aligned with upstream recommendations.
+# Perl deps + the Mojolicious optional modules. JSON::XS is essential: without it
+# Resque::Encoder falls back to JSON::PP, whose utf8 decoder is quadratic on
+# non-ASCII input and wedges the workers sub-tasks on multi-MB payloads.
 RUN cpanm --notest --no-man-pages Mojolicious Resque Redis JSON::XS \
         EV Cpanel::JSON::XS IO::Socket::SSL Net::DNS::Native IO::Socket::Socks \
         Role::Tiny Future::AsyncAwait \
